@@ -1,0 +1,588 @@
+\documentclass{beamer}
+\usepackage[most]{tcolorbox}
+\usepackage{fontawesome5}
+\usepackage{hyperref}  
+\tcbuselibrary{skins, breakable, listings}
+
+\title{Mathmatical Foundations for Deep Generative Models}
+\author{Michael Jin}
+\date{\today}
+\institute{
+  \small
+  \faGithub\ \href{https://github.com/Michael-J1n/Mathematical-Foundation-for-Deep-Generative-Models}{\texttt{Michael-J1n}} \\[1ex]
+}
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}[t]
+\frametitle{Ultimate Goal}
+\begin{tcolorbox}[colback=blue!1!white,
+                  colframe=blue!75!black]
+$$\theta^*=\arg\min_\theta\mathcal{D}\left(p_{\text{data}}(x) \mid
+\mid p_\theta\right)$$
+\end{tcolorbox}
+\vspace{2em}
+\begin{itemize}
+\item $p_\theta$: model parameterized by $\theta$; e.g., neural network in DGM
+    \begin{itemize}
+        \item Q: what does the model stand for?
+        \item A: \textbf{probability density function} for data distribution
+    \end{itemize}
+\item $p_\text{data}$: real data distribution in terms of p.d.f.
+    \begin{itemize}
+        \item Q: do we really have?
+        \item A: not really
+    \end{itemize}
+\item $\mathcal{D}$: a measure of `distance'
+\end{itemize}
+\end{frame}
+
+\begin{frame}[t]
+\frametitle{Discrete v.s. Continuous}
+Given sample data: $$A=\{x^1,x^2,\dots, x^N\},\quad x^i\in\mathbb{R}^d,\quad x^i\overset{\text{i.i.d.}}\sim p_{\text{data}}(x)$$ we can define the empirical distribution for estimating real distribution as:
+\begin{tcolorbox}[colback=blue!1!white,
+                  colframe=blue!75!black]
+\[\displaystyle p_N(x)=\frac{1}{N}\sum_{i = 1}^N \mathbf{1}_{x^{i}\in A}=\frac{1}{N}\sum_{i = 1}^N \delta(x-x^{i})\]
+\end{tcolorbox}
+
+\begin{itemize}
+    \item Probability mass function: $\displaystyle\int p_N(x)\text{d}x=\frac{1}{N}\sum_{i=1}^N\int \delta(x-x^i)\text{d}x=1$
+    \item On expectation: $\displaystyle\mathbb{E}_{x\sim p_{N}(x)}[f(x)]=\sum_{i=1}^Nf(x^i)$
+\end{itemize}
+\end{frame}
+
+\begin{frame}[t]
+\frametitle{Measure divergence}
+By information theory, optimal bit size for $x$ is $I(x)=-\log p(x)$. Hence we can define
+\begin{itemize}
+\item Information entropy for $p$: $$H(p)=\mathbb{E}_{x\sim p}[-\log p(x)]=-\int p(x)\log q(x)\text{d}x$$
+\item Cross entropy if use $q$ to encode $p$:
+$$H(p, q)=-\int p(x)\log q(x)\text{d}x$$
+\end{itemize}
+So how many bits are wasted if we use $q$ to encode $p$?
+\begin{tcolorbox}[colback=blue!1!white,
+                  colframe=blue!75!black]
+$$\mathrm{D_{KL}}(p\mid\mid q)=H(p,q)-H(p)=\int p(x)\log\frac{p(x)}{q(x)}\text{d}x$$
+\end{tcolorbox}
+\end{frame}
+
+\begin{frame}[t]
+\frametitle{Lower Bound}
+\begin{align*}
+\mathrm{D_{KL}}(p\mid\mid q)&=\int p(x)\log\frac{p(x)}{q(x)}\text{d}x\\
+&=-\int p(x)\log\frac{q(x)}{p(x)}\text{d}x\\
+&\ge -\log\int p(x)\frac{q(x)}{p(x)}\text{d}x\\
+&=-\log\int q(x)\text{d}x=-\log(1)=0
+\end{align*}
+\vspace{1em}
+What about upper bound?\\
+\quad \quad Consider for some $x$, $q(x)=0$; then $|\mathrm{D_{KL}}|\longrightarrow\infty$\\
+\quad \quad Problem: Exploding Gradients
+\end{frame}
+
+\begin{frame}[t]
+\frametitle{Solution}
+We can measure the distance to average distribution instead.
+Let $m(x)=\frac{1}{2}[p(x)+q(x)]$, then we define
+\begin{tcolorbox}[colback=blue!1!white,
+                  colframe=blue!75!black]
+$$\mathrm{D_{JS}}(p\mid\mid q)=\frac{1}{2}\mathrm{D_{KL}}(p\mid\mid m)+\frac{1}{2}\mathrm{D_{KL}}(q\mid\mid m)
+$$
+\end{tcolorbox}
+\begin{itemize}
+    \item $\mathrm{D_{JS}}(p\mid\mid q)=\mathrm{D_{JS}}(q\mid\mid p)$
+    \item Lower bound: $\mathrm{D_{JS}}\ge 0$ since $\mathrm{D_{KL}}\ge 0$
+    \item Upper bound:
+\end{itemize}
+\end{frame}
+
+\begin{frame}[t]
+\frametitle{Upper Bound}
+\begin{align*}
+    \mathrm{D_{KL}}(p\mid\mid m)&=\int p(x)\log\frac{p(x)}{m(x)}\text{d}x\\
+    &=\int p(x)\log\frac{p(x)}{\frac{1}{2}[p(x)+q(x)]}\text{d}x\\
+    &\le \int p(x)\log \frac{2}{1+\frac{q(x)}{p(x)}}\text{d}x\\
+    &\le \log{2}\int p(x)\text{d}x=\log{2}
+\end{align*}
+Therefore,
+\begin{align*}
+    \mathrm{D_{JS}}(p\mid\mid q)&=\frac{1}{2}\mathrm{D_{KL}}(p\mid\mid m)+\frac{1}{2}\mathrm{D_{KL}}(q\mid\mid m)\\
+    &\le \frac{1}{2}\cdot 2\log2=\log2
+\end{align*}
+\end{frame}
+
+\begin{frame}[t]
+\frametitle{MLE}
+Back to $A=\{x^i\}_{i=1}^N$, their joint probability for appearing in $p_\theta$:\\
+$$
+p_\theta(x^1,x^2,\dots, x^N)=\prod_{i=1}^Np_\theta(x^i)
+$$
+We want to maximize this probability, so
+\begin{align*}
+\theta^*&=\arg\max_\theta\prod_{i=1}^N p_\theta(x^i)\\
+&=\arg\max_\theta\sum_{i=1}^N\log p_\theta(x^i)\\
+&=\arg\max_\theta\mathbb{E}_{x\sim p_N}[\log p_\theta(x)]
+\end{align*}
+
+\begin{tcolorbox}[colback=blue!1!white,
+                  colframe=blue!75!black]
+$$
+\hat\theta_{\text{MLE}}=\arg\max_\theta \mathbb{E}\left[\log p_\theta(x)\right]
+$$
+\end{tcolorbox}
+\end{frame}
+
+\begin{frame}[t]
+\frametitle{MLE \& KLD}
+\begin{align*}
+    \mathrm{D_{KL}}(p_N\mid\mid p_\theta)&=\sum _{i=1}^Np_{N}\log\frac{p_N(x)}{p_\theta(x)}\\
+    &=\sum_{i=1}^N p_N\log p_N(x)-\sum_{i=1}^N p_N(x)\log p_\theta(x)\\
+    &=H(p_N)-\sum_{i=1}^N p_N(x)\log p_\theta(x)
+\end{align*}
+\end{frame}
+
+\begin{frame}[t]
+Therefore,
+\begin{align*}
+    \theta^*&=\arg\min_\theta\mathrm{D_{KL}}(p_{\text{data}}\mid\mid p_\theta)\\
+    &=\arg\min_\theta \left[H(p_N)-\sum_{i=1}^N p_N(x)\log p_\theta(x)\right]\\
+    &=\arg\max_\theta \sum_{i=1}^Np_N(x)\log p_\theta(x)\\
+    &=\arg\max_\theta \mathbb{E}_{x\sim p_N(x)}[\log p_\theta(x)]
+\end{align*}
+\vspace{2em}
+\begin{tcolorbox}[colback=blue!1!white,
+                  colframe=blue!75!black]
+$$
+\hat\theta_\text{MLE}=\hat\theta_{\mathrm{D_{KL}}}
+$$
+\end{tcolorbox}
+\end{frame}
+
+\begin{frame}[t]
+\frametitle{Next Step}
+Here we finish some basic knowledge check. Back to the first slide, how can we build the model of $p_\theta(x)$?
+Some known approaches:
+\begin{itemize}
+    \item Explicitly write down $p_\theta(x)$
+    \item Implicitly get $p_\theta(x)$: use latent space
+    \item learn a function about $p_\theta(x)$
+\end{itemize}
+\end{frame}
+
+\begin{frame}[t]
+\frametitle{Autoregressive}
+Write $x=(x_1,x_2,\dots,x_d)\in\mathbb{R}^d$, then
+$$
+p(x)=p(x_1)\cdot p(x_2\mid x_1)\cdot p(x_3\mid x_1, x_2)\cdots p(x_d\mid x_{<d})
+$$
+That is,
+\begin{tcolorbox}[colback=blue!1!white,
+                  colframe=blue!75!black]
+$$
+p(x)=\prod_{t=1}^d p_\theta(x_t\mid x_{<t})
+$$
+\end{tcolorbox}
+Hence,
+\begin{align*}
+    \theta^*&=\arg\max_\theta\sum_{i=1}^N\log p_\theta(x^i)\\
+    &=\arg\max_\theta\sum_{i=1}^N\sum_{t=1}^T\log p_\theta(x_t^i\mid x_{<t}^i)
+\end{align*}
+\end{frame}
+
+\begin{frame}[t]
+\frametitle{Normalizing Flow (1)}
+Introduce a simple distribution $z\sim p_Z(z)$ in the latent space $\mathbb{R}^d$.
+Assume there exist a bijective function $f_\theta: z\longrightarrow x$ such that $f_{\theta}{_\#}p_Z=p_X$ (push-forward measure).
+
+\vspace{2em}
+By change of variable:
+$$
+\text{d}x=\left|\det\frac{\partial f}{\partial x}\right|\text{d}z :=\left|J_f(z)\text{d}z \right|
+$$
+and the probability conservation, we have:
+\begin{align*}
+p_X(x)\text{d}x&=p_Z(z)\text{d}z\\
+&=p_Z(z)\left|\det \frac{\partial f}{\partial z}\right|^{-1}\text{d}x\quad\tag{*}
+\end{align*}
+\end{frame}
+
+\begin{frame}[t]
+\frametitle{Normalizing Flow (2)}
+Recall that we have $(f^{-1}\circ f)(z)=I_d(z)$ for $\forall z\sim p_Z(z)$, so by chain rule,
+$$
+\frac{\partial f^{-1}}{\partial x}\cdot\frac{\partial f}{\partial z}=I_d
+\Rightarrow \left(\frac{\partial f}{\partial z}\right)^{-1}=\frac{\partial f^{-1}}{\partial x}
+$$
+Hence $(*)\Longleftrightarrow$
+$$p_X(x)=p_Z(z)\left|\det \frac{\partial f_\theta^{-1}}{\partial x}\right|$$
+Or,
+\begin{tcolorbox}[colback=blue!1!white,
+                  colframe=blue!75!black]
+$$p_\theta(x)=p_Z(f_\theta^{-1}(x))\left|\det \frac{\partial f_\theta^{-1}}{\partial x}\right|$$
+\end{tcolorbox}
+\end{frame}
+
+\begin{frame}[t]
+\frametitle{Normalizing Flow (3)}
+And it follows that
+\begin{align*}
+\theta^*&=\arg\max_\theta\mathbb{E}_{x\sim p_N}\log p_\theta(x)\\
+&=\arg\max_\theta \left[\log p_Z(f_\theta^{-1})+\log \left|\det \frac{\partial f_\theta^{-1}}{\partial x}\right|\right]
+\end{align*}
+\vspace{2em}
+Base log-density + volume correction
+\end{frame}
+
+\begin{frame}[t]
+\frametitle{GAN (1)}
+\begin{itemize}
+    \item In NF: $f$ has to be bijective, and requires a tractable Jacobian determinant
+    vspace{1em}
+    \item In GAN: Still assume simple distribution $z\sim p_Z(z)$ in the latent space $\mathbb{R}^k$.\\ Define generator $G_\theta: \mathbb{R}^k\to \mathbb{R}^d$ such that $x = G_\theta(z)$, where $G$ is not necessarily bijective.
+    \begin{itemize}
+        \item Problem: Unable to write down $\log p_\theta (x)$ \& perform MLE
+        \vspace{1em}
+        \item Solution: Add discriminator $D_\phi:\mathbb{R}^d\to [0,1]$ as supervising signal
+    \end{itemize}
+\end{itemize}
+
+\vspace{1em}
+
+Value function:
+\begin{tcolorbox}[colback=blue!1!white,
+                  colframe=blue!75!black]
+$$
+V(D, G)=\mathbb{E}_{x\sim p_N}[\log D(x)]+\mathbb{E}_{x\sim p_\theta}[\log(1-D(x))]
+$$
+\end{tcolorbox}
+
+\end{frame}
+
+\begin{frame}[t]
+\frametitle{GAN (2)}
+`Zero-sum game':
+\begin{tcolorbox}[colback=blue!1!white,
+                  colframe=blue!75!black]
+$$
+\min_G\max_DV(D, G)
+$$
+\end{tcolorbox}
+
+Goal: given that $\phi$ is optimized, find an optimized $\theta$.\\
+\vspace{1em}
+
+1. Find the optimal $D_\phi$ given $G_\theta$ fixed:
+$$
+f(D)=p_N(x)\log(D(x))+p_\theta(x)\log(1-D(x))$$
+$$
+\Rightarrow \frac{\text{df}}{\text{d}D}=\frac{p_N(x)}{D(x)}-\frac{p_\theta(x)}{1-D(x)}:=0
+$$
+$$
+\Rightarrow D^*(x)=\frac{p_N(x)}{p_N(x)+p_\theta(x)}
+$$
+\end{frame}
+
+\begin{frame}[t]
+\frametitle{GAN (3)}
+2. Find the optimal $G_\theta$ given optimal $D_\phi$:
+
+Denote $m(x)=\displaystyle\frac{1}{2}[p_N(x)+p_\theta(x)]$, then 
+\begin{align*}
+    V(D*, G)&=\mathbb{E}_{x\sim p_N}\left[\log\frac{p_N(x)}{2m(x)}\right]+\mathbb{E}_{x\sim p_\theta}\left[\log\frac{p_\theta(x)}{2m(x)}\right]\\
+    &=2\left(\frac{1}{2}\mathbb{E}_{x\sim p_N}\left[\log\frac{p_N(x)}{m(x)}\right]+\frac{1}{2}\mathbb{E}_{x\sim p_\theta}\left[\log\frac{p_\theta(x)}{m(x)}\right]-\log2\right)\\
+    &=2\mathrm{D_{JS}}(p_N\mid\mid p_\theta) - 2\log2
+\end{align*}
+Therefore,
+\begin{tcolorbox}[colback=blue!1!white,
+                  colframe=blue!75!black]
+$$
+\min_GV(D^*,G)\Longleftrightarrow\arg\min_\theta \mathrm{D_{JS}}(p_N\mid\mid p_\theta)
+$$
+\end{tcolorbox}
+
+\end{frame}
+
+\begin{frame}[t]
+\frametitle{VAE (1)}
+\begin{itemize}
+    \item So far, latent to real is in point to point fashion
+    \item What about point to distribution?
+\end{itemize}
+\vspace{1em}
+
+Simple distribution $z\sim p_Z(z)$ in latent space $\mathbb{R}^k$, find its ouput in $p_N$ as a distribution / p.d.f.:
+$p_\theta(x|z)$.
+\vspace{1em}
+
+Then we can model $p_\theta(x)$ using marginalization:
+\begin{align*}
+p_\theta(x)=\int p_\theta(x|z)p(z)\text{d}z\quad\tag{**}
+\end{align*}
+\begin{itemize}
+    \item Problem: $z$ is continuous and in high-dimensional space, how to avoid integrate w.r.t. it?
+    \item Solution: see the following trick about ELBO:
+\end{itemize}
+\end{frame}
+
+\begin{frame}[t]
+\frametitle{VAE (2)}
+Introduce another distribution $q_\phi(z|x)$, and by $(**):$
+\begin{align*}
+    \log p_\theta(x)&=\log \int q_\phi(z|x)\frac{p_\theta(x,z)}{q_\phi(z|x)}\text{d}x\\
+    &\ge\int q_\phi(z|x)\log \frac{p_\theta(x,z)}{q_\phi(z|x)}\text{d}x\\
+    &=\mathbb{E}_{z\sim q_\phi(z|x)}\left[\log\frac{p_\theta(x|z)p(z)}{q_\phi(z|x)}\right]\\
+    &:=\text{ELBO}(x)
+\end{align*}
+Where
+$$
+\text{ELBO}(x)=\mathbb{E}_{z\sim q_\phi(z|x)}[\log p_\theta(x|z)-(\log q_\phi(z|x)-\log p(z))] \Longrightarrow
+$$
+\begin{tcolorbox}[colback=blue!1!white,
+                  colframe=blue!75!black]
+$$
+\text{ELBO}(x)=\mathbb{E}_{z\sim q_\phi(z|x)}[\log p_\theta(x|z)]-\mathrm{D_{KL}}(q_\phi(z|x)\mid\mid p_Z(z))
+$$
+\end{tcolorbox}
+\end{frame}
+
+\begin{frame}[t]
+\frametitle{VAE (3)}
+We want to maximize log-likelihood, so we should maximize the \textbf{ELBO}:
+$$
+\theta^*, \phi^*=\arg\max_{\theta, \phi}\mathbb{E}_{z\sim q_\phi(z|x)}[\log p_\theta(x|z)]-\mathrm{D_{KL}}(q_\phi(z|x)\mid\mid p_Z(z))
+$$
+\vspace{2em}
+Base log-density + posterior correction
+\end{frame}
+
+\begin{frame}[t]
+\frametitle{EBM (1)}
+Still, we want to momdel a $p_\theta(x)$ such that it has MLE to $p_N(x)$. Lets borrow some ideas from physics. 
+\vspace{1em}
+
+Inspired by Boltzman Distribution $\displaystyle p_i=\frac{1}{Z}\exp(-\frac{\epsilon_i}{kT})$, we can model the p.d.f. of data as proportional to their energy $E(x)$ (lower energy means higher density):
+\begin{tcolorbox}[colback=blue!1!white,
+                  colframe=blue!75!black]
+$$
+p_\theta(x)=\frac{\exp(-E_\theta(x))}{Z(\theta)}
+$$
+\end{tcolorbox}
+where $\displaystyle Z(\theta)=\int \exp(-E_\theta(x))\text{d}x$ is called the partition function.
+\end{frame}
+
+\begin{frame}[t]
+\frametitle{EBM (2)}
+If the data is in low dimension, we can design (or fit) $E_\theta(x)$ and calculate the partition function to get log-likelihood.
+\vspace{1em}
+
+For example, Hopfiled Network (which is the 2024 Nobel Prize for physics):
+$$
+E_\theta(x)=-\frac{1}{2}x^TW_\theta x+b_\theta^Tx
+$$
+Sampling from EBM: Inspired by Langevin Dynamics,
+$$
+\frac{\text{d}x}{\text{d}t}=-\nabla_xE_\theta(x)+\sqrt{2\beta^{-1}}\eta(t)
+$$
+we can make the sampling process like
+$$
+x_{k+1}=x_k-\frac{\epsilon}{2}\nabla_xE_\theta(x_k)+\sqrt{\epsilon}\eta_k
+$$
+from the SDE's Euler–Maruyama solution.
+\end{frame}
+
+\begin{frame}[t]
+\frametitle{EBM (3)}
+But if the data is in high dimension, the partition function is hard to compute.\\
+Solution: we can directly learn $\nabla_xE_\theta(x)$, since it is the only parametrized term in the sampling process. Rather then know where is the destination, we can just learn where to go!
+
+Therefore,
+$$
+\log p_\theta(x)=\log\left[\frac{\exp(-E_\theta(x))}{Z(\theta)}\right]=-E_\theta(x)-\log Z(\theta)
+$$
+becomes
+$$
+\nabla_x\log p_\theta(x)=\nabla_x[-E_\theta(x)]-\nabla_x[\log Z(\theta)]=-\nabla_x[-E_\theta(x)]
+$$
+and hence we can learn the score function
+\begin{tcolorbox}[colback=blue!1!white,
+                  colframe=blue!75!black]
+$$
+S_\theta(x)=\nabla_x\log p_\theta(x)
+$$
+\end{tcolorbox}
+\end{frame}
+
+\begin{frame}[t]
+\frametitle{SBM (1)}
+Recall that the score function is in fact the gradient field for probability distribution.\\
+Before write down its detailed formulae, we need to first introduce the \textbf{Fisher Divergence}. It measures the difference of gradient fields for probability distributions:
+$$
+\mathrm{D_F}(p\mid\mid q)=\frac{1}{2}\int p(x)||\nabla_x\log p(x)-\nabla_x\log q(x)||^2\text{d}x
+$$
+So we can try to make the goal for SBM as following:
+$$
+\theta^*=\arg\min_\theta\mathbb{E}_{x\sim p_N}[||s_\theta(x)-\nabla_x\log p_N(x)||^2]
+$$
+but we cannot get the gradient for a discrete function $p_N(x)$.
+\end{frame}
+
+\begin{frame}[t]
+\frametitle{SBM (2)}
+Solution: lets go back to Fisher Divergence,
+\begin{align*}
+    \mathrm{D_F}(p\mid\mid q)&=\frac{1}{2}\mathbb{E}_{x\sim p}\left[||\nabla_x\log p(x)-\nabla_x\log q(x)||^2\right]\\
+    &=\frac{1}{2}\mathbb{E}_{x\sim p}[||\nabla_x\log p(x)||^2-2\langle \nabla_x\log p(x), \nabla_x\log q(x)\rangle\\&\quad+||\nabla_x\log q(x)||^2 ]\tag{\#}
+\end{align*}
+where
+\begin{align*}
+&\mathbb{E}_{x\sim p}\langle \nabla_x\log p(x), \nabla_x\log q(x)\rangle\\&=\int p(x)[\nabla_x\log p(x)]^T\nabla_x\log q(x)\text{d}x\\
+&=\int p(x)\left[\sum_i \nabla_x\log p(x_i)\nabla_x\log q(x_i)\right]\text{d}x\\
+&=\sum_i\int p(x_i)\cdot \frac{\nabla_x p(x_i)}{p(x_i)}\nabla_x\log q(x_i)\text{d}x
+\end{align*}
+\end{frame}
+
+\begin{frame}[t]
+\frametitle{SBM (3)}
+\begin{align*}
+&=\sum_i\int \nabla_x\log q(x_i)\text{d}[p(x_i)]\\
+&=\sum_i\left(\left[p(x_i)\nabla_x\log q(x_i)\right]_{\infty}^{\infty}-\int p(x_i)\nabla_x^2\log q(x_i)\text{d}x\right)\\
+&=-\sum_i\int p(x_i)\nabla_x^2\log q(x_i)\text{d}x\\
+&=-\int p(x)\left(\sum_i \nabla_x^2\log q(x_i)\right)\text{d}x\\
+&=-\int p(x)\Delta_x \log q(x)\text{d}x\\
+&=-\mathbb{E}_{x\sim p(x)}[\Delta_x \log q(x)]
+\end{align*}
+\end{frame}
+
+\begin{frame}[t]
+\frametitle{SBM (4)}
+Then plug this back to $(\#):$
+\begin{align*}
+&\quad\mathrm{D_F}(p\mid\mid q)\\&=\mathbb{E}_{x\sim p}\left(\frac{1}{2}||\nabla_x\log p(x)||^2+2\Delta_x\log q(x)+\frac{1}{2}||\nabla_x\log q(x)||^2\right)
+\end{align*}
+Therefore,
+\begin{align*}
+&\mathrm{D_F}(p_N\mid\mid p_\theta)\\&=\mathbb{E}_{x\sim p_N(x)}\left(2\Delta_x\log p_\theta(x)+\frac{1}{2}||\nabla_x\log p_\theta(x)||^2\right)+C\\
+&=\mathbb{E}_{x\sim p_N(x)}\left(2\nabla_x s_\theta(x)+\frac{1}{2}||s_\theta(x)||^2\right)+C
+\end{align*}
+And hence
+\begin{tcolorbox}[colback=blue!1!white,
+                  colframe=blue!75!black]
+$$\theta^*=\arg\min_\theta \mathbb{E}_{x\sim p_N(x)}\left[2\nabla_x s_\theta(x)+\frac{1}{2}||s_\theta(x)||^2\right]$$
+\end{tcolorbox}
+\end{frame}
+
+\begin{frame}[t]
+\frametitle{DSM (1)}
+Traditional score matching is uneasy \& costly to compute, so another approach is introduced: add noise.
+\vspace{1em}
+
+Let $x\sim p_N(x)$, we `smooth' this sample to a distribution: $q(\tilde{x}|x)\sim \mathcal{N}(\tilde{x};x,\sigma^2\mathrm{I})$. It can be seen as $\tilde{x}=x+\epsilon$, where $\epsilon$ is a noise.
+Assume we have a $\tilde{x}$, we still need to let model learn `where to go', that is to trace along the gradient field for log-likelihood, i.e., the score function.
+\vspace{1em}
+
+We know by marginalization that
+$$
+p(\tilde{x})=\int p_N(x)q(\tilde{x}|x)\text{d}x=\mathbb{E}_{x\sim p_N(x)}[q(\tilde{x}|x)]
+$$
+Hence:
+\end{frame}
+
+\begin{frame}[t]
+\frametitle{DSM (2)}
+\begin{align*}
+s(\tilde{x})&=\nabla_{\tilde{x}}\log p(\tilde{x})=\frac{1}{p(\tilde{x})}\nabla{_\tilde{x}}p(\tilde{x})
+=\frac{1}{p(\tilde{x})}\nabla_{\tilde{x}} \int p_N(x)q(\tilde{x}|x)\text{d}x\\
+&=\frac{1}{p(\tilde{x})}\int p_N(x)\nabla_{\tilde{x}}q(\tilde{x}|x)\text{d}x
+=\int \frac{p_N(x)q(\tilde{x}|x)}{p(\tilde{x})}\nabla_{\tilde{x}}\log q(\tilde{x}|x)\text{d}x\\
+&=\int p(x|\tilde{x})\nabla_{\tilde{x}}\log q(\tilde{x}|x)\text{d}x=\mathbb{E}_{x\sim p(x|\tilde{x})}[\nabla_{\tilde{x}}\log q(\tilde{x}|x)]
+\end{align*}
+Since $q$ is a normal distribution, $\displaystyle q(\tilde{x}|x)=k\exp\left(\frac{||\tilde{x}-x||^2}{-2\sigma^2}\right)$, so $\displaystyle\nabla{_\tilde{x}}\log q(\tilde{x}|x)=\frac{x-\tilde{x}}{\sigma^2}$. Therefore,
+\begin{tcolorbox}[colback=blue!1!white,
+                  colframe=blue!75!black]
+$$
+s(\tilde{x})=\frac{1}{\sigma^2}\mathbb{E}_{x\sim p(x|\tilde{x})}[x-\tilde{x}]
+$$
+\end{tcolorbox}
+\end{frame}
+
+\begin{frame}[t]
+\frametitle{DSM (3)}
+From their, we can then by linearity of expectation to get
+$$
+\mathbb{E}_{x\sim p(x|\tilde{x})}[x]=\tilde{x}+\sigma^2\nabla_{\tilde{x}}\log p(\tilde{x})
+$$
+which shows that the score function is the direction of denoising.
+\vspace{1em}
+
+For the LHS, we cannot directly get, but we can use a network $f_\theta$:
+$\displaystyle s(\tilde{x})=\frac{f_\theta(\tilde{x})-\tilde{x}}{\sigma^2}$ to learn it, using simple MSE:
+$$
+\theta^*=\arg\min_\theta \mathbb{E}_{x\sim p_N(x),\tilde{x}\sim q({\tilde{x}}|x)}[||f_\theta({\tilde{x}})-x||^2]
+$$
+
+For sampling process ($x_T$ to $x_0$), still use Langevin Dynamics:
+$$
+x_{t-1}=x_{t}+\frac{\epsilon}{2\sigma^2}[f_\theta(x_t)-x_t]+\sqrt{\epsilon}\eta_t
+$$
+\end{frame}
+
+\begin{frame}[t]
+\frametitle{DSM (4)}
+From DSM to DDPM: multi-step noise adding as a Markov process (which means there is a new parameter $t$ to control for time frame)
+$$
+q(x_t|x_{t-1})=\mathcal{N}(x_t;\sqrt{1-\beta_t}x_{t-1},\beta_t\mathrm{I})
+$$
+which can lead to the following closed form simply by adding multiple normal distributions:
+$$
+q(x_t|x_0)=\mathcal{N}(x_t;\sqrt{\bar{\alpha}_t}x_0,(1-\bar\alpha_t)\mathrm{I})
+$$
+which can also be written as 
+\begin{tcolorbox}[colback=blue!1!white,
+                  colframe=blue!75!black]
+$$
+x_t=\sqrt{\bar\alpha_t}x_0+\sqrt{1-\bar\alpha_t}\epsilon
+$$
+\end{tcolorbox}
+Therefore,
+$$
+\nabla_{x_t}\log q(x_t|x_0)=-\frac{1}{1-\bar\alpha_t}(x_t-\sqrt{\bar\alpha_t}x_0)=
+\frac{1}{\sqrt{1-\bar\alpha_t}}\epsilon
+$$
+\end{frame}
+
+\begin{frame}[t]
+\frametitle{DSM (5)}
+
+We can use a function (network) parametrized by $\theta$, $s_\theta$, to learn for the score of the noise sample. Back to the original score fisher-divergence loss:
+\begin{align*}
+\theta^*&=\arg\min_\theta\mathbb{E}_{x_0\sim q(x_0), x_t\sim q(x_t|x_0)}[||s_\theta(x_t,t)-s(x_t,t)||^2]\\
+&=\arg\min_\theta \mathbb{E}_{x_0\sim q(x_0), x_t\sim q(x_t|x_0)}[||s_\theta(x_t,t)+\frac{1}{\sqrt{1-\bar\alpha_t}}\epsilon||^2]\\
+&=\arg\min_\theta \mathbb{E}_{x_0\sim q(x_0), x_t\sim q(x_t|x_0)}[||-\frac{1}{\sqrt{1-\bar\alpha_t}}\epsilon_\theta(x_t,t)+\frac{1}{\sqrt{1-\bar\alpha_t}}\epsilon||^2]
+\end{align*}
+\begin{tcolorbox}[colback=blue!1!white,
+                  colframe=blue!75!black]
+$$&=\arg\min_\theta \mathbb{E}[\epsilon-\epsilon_\theta(x_t,t)]$$
+\end{tcolorbox}
+Which shows that it is equivalent to construct a network for predicting noise!
+\end{frame}
+
+\begin{frame}[t]
+\frametitle{What's more?}
+If you think this is not enough, you can explore more on how differential equations work with generative models. In fact, diffusion process is closely related to Stochastic Differential Equations:
+\vspace{1em}
+
+The forward process (add noise) is
+$$
+\text{d}x=-\frac{1}{2}\beta_tx\text{d}t+\sqrt{\beta_t}\text{d}W
+$$
+where we call the coefficient to $\text{d}t$ the drift term $f(x,t)$, and $\text{d}W$ is a Brownian motion in $\mathbb{R}^d$, where its coefficient is the diffusion term $g(x,t)$.
+Its corresponding reverse process (denoise) can be computed using Kologorov equations, and the result looks like
+$$
+\text{d}x=[-\frac{1}{2}\beta_tx-\beta_t\nabla_x\log p(x)]\text{d}t+\sqrt{\beta_t}\text{d}\tilde{W}
+$$
+
+\end{frame}
+
+\end{document}
